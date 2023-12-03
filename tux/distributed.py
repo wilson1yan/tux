@@ -101,18 +101,6 @@ def make_shard_and_gather_fns(partition_specs, dtype_specs=None):
         )
         return jax_gather_fn
 
-        def lower_gather_fn(tensor):
-            return jax_gather_fn.lower(tensor)
-        
-        def execute_gather_fn(tensor):
-            lowered_fn = jax_gather_fn.lower(tensor)
-            compiled_fn = lowered_fn.compile()
-
-            out = jax.device_get(compiled_fn(tensor))
-            return out
-            return jax.device_get(jax_gather_fn(tensor))
-        return (lower_gather_fn, execute_gather_fn)
-
     if dtype_specs is None or dtype_specs in float_dtypes:
         shard_fns = jax.tree_util.tree_map(make_shard_fn, partition_specs)
         gather_fns = jax.tree_util.tree_map(make_gather_fn, partition_specs)

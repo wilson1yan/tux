@@ -59,29 +59,21 @@ class StreamingCheckpointer(object):
                     fout.write(packer.pack((key, to_bytes(value))))
             return
         
-        from tqdm import tqdm
         gather_fns = flatten_dict(to_state_dict(gather_fns))
-
-        print('Lowering')
         lowered_fns = dict()
-        for key, value in tqdm(flattend_train_state.items(), total=len(flattend_train_state)):
+        for key, value in flattend_train_state.items():
             lowered_fns[key] = gather_fns[key].lower(value)
         
-        print('Compiling')
         compiled_fns = dict()
         with ThreadPoolExecutor() as executor:
-            print('Submitting')
-            for key in tqdm(flattend_train_state.keys(), total=len(flattend_train_state)):
+            for key in flattend_train_state.keys():
                 lowered_fn = lowered_fns[key]
                 value = flattend_train_state[key]
                 compiled_fns[key] = executor.submit(lowered_fn.compile)
-            print('Retrieving Results')
-            for key in tqdm(flattend_train_state.keys(), total=len(flattend_train_state)):
-                compiled_fns[key] = compiled_fns[key].result() 
+            compiled_fns = {k: f.result() for k, f in compiled_fns.items()}
 
-        print('Saving')
         with open_file(path, "wb") as fout:
-            for key, value in tqdm(flattend_train_state.items(), total=len(flattend_train_state)):
+            for key, value in flattend_train_state.items():
                 value = jax.device_get(compiled_fns[key](value))
                 value = float_tensor_to_dtype(value, float_dtype)
                 fout.write(packer.pack((key, to_bytes(value))))
