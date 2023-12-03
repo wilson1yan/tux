@@ -1,4 +1,5 @@
 import dataclasses
+import time
 import math
 import os
 import random
@@ -99,6 +100,13 @@ def make_shard_and_gather_fns(partition_specs, dtype_specs=None):
             out_shardings=None
         )
         def gather_fn(tensor):
+            start = time.time()
+            compiled_fn = jax_gather_fn.lower(tensor).compile()
+            print('gather compile:', time.time() - start)
+            start = time.time()
+            out = jax.device_get(compiled_fn(tensor))
+            print('gather execute:', time.time() - start)
+            return out
             return jax.device_get(jax_gather_fn(tensor))
         return gather_fn
 
