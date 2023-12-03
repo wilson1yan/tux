@@ -93,6 +93,7 @@ def make_shard_and_gather_fns(partition_specs, dtype_specs=None):
             return jax_shard_function(tensor).block_until_ready()
         return shard_fn
 
+    time_spent_lower = 0
     time_spent_compile = 0
     time_spent_execute = 0
     def make_gather_fn(partition_spec, dtype_spec=None):
@@ -102,17 +103,23 @@ def make_shard_and_gather_fns(partition_specs, dtype_specs=None):
             out_shardings=None
         )
         def gather_fn(tensor):
-            nonlocal time_spent_compile, time_spent_execute
+            nonlocal time_spent_lower, time_spent_compile, time_spent_execute
             start = time.time()
-            compiled_fn = jax_gather_fn.lower(tensor).compile()
+            lowered_fn = jax_gather_fn.lower(tensor)
+            elapsed_lower = time.time() - start
+            time_spent_lower += elapsed_lower
+
+            start = time.time()
+            compiled_fn = lowered_fn.compile()
             elapsed_compile = time.time() - start
             time_spent_compile += elapsed_compile
+
             start = time.time()
             out = jax.device_get(compiled_fn(tensor))
             elapsed_execute = time.time() - start
             time_spent_execute += elapsed_execute
             total = time_spent_compile + time_spent_execute
-            print(f"compile: {time_spent_compile / total * 100.:.2f}%, execute: {time_spent_execute / total * 100.:.2f}%")
+            print(f"lower: {time_spent_lower / total * 100.:.2f}%, compile: {time_spent_compile / total * 100.:.2f}%, execute: {time_spent_execute / total * 100.:.2f}%")
             return out
             return jax.device_get(jax_gather_fn(tensor))
         return gather_fn
