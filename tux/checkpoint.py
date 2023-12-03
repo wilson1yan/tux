@@ -70,11 +70,13 @@ class StreamingCheckpointer(object):
         print('Compiling')
         compiled_fns = dict()
         with ThreadPoolExecutor() as executor:
-            for key in flattend_train_state.keys():
+            print('Submitting')
+            for key in tqdm(flattend_train_state.keys(), total=len(flattend_train_state)):
                 lowered_fn = lowered_fns[key]
                 value = flattend_train_state[key]
                 compiled_fns[key] = executor.submit(lowered_fn.compile)
-            for key in tqdm(flattend_train_state.keys(), totla=len(flattend_train_state)):
+            print('Retrieving Results')
+            for key in tqdm(flattend_train_state.keys(), total=len(flattend_train_state)):
                 compiled_fns[key] = compiled_fns[key].result() 
 
         print('Saving')
