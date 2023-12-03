@@ -53,8 +53,9 @@ class StreamingCheckpointer(object):
         if gather_fns is not None:
             gather_fns = flatten_dict(to_state_dict(gather_fns))
 
+        from tqdm import tqdm
         with open_file(path, "wb") as fout:
-            for key, value in flattend_train_state.items():
+            for key, value in tqdm(flattend_train_state.items(), total=len(fattend_train_state)):
                 if gather_fns is not None:
                     value = gather_fns[key](value)
                 value = float_tensor_to_dtype(value, float_dtype)
