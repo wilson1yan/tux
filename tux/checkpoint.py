@@ -65,7 +65,7 @@ class StreamingCheckpointer(object):
         print('Lowering')
         lowered_fns = dict()
         for key, value in tqdm(flattend_train_state.items(), total=len(flattend_train_state)):
-            lowered_fns[key] = gather_fns[key][0](value)
+            lowered_fns[key] = gather_fns[key].lower(value)
         
         print('Compiling')
         compiled_fns = dict()
@@ -80,7 +80,7 @@ class StreamingCheckpointer(object):
         print('Saving')
         with open_file(path, "wb") as fout:
             for key, value in tqdm(flattend_train_state.items(), total=len(flattend_train_state)):
-                value = compiled_fns[key](value)
+                value = jax.device_get(compiled_fns[key](value))
                 value = float_tensor_to_dtype(value, float_dtype)
                 fout.write(packer.pack((key, to_bytes(value))))
 

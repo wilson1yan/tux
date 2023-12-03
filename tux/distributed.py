@@ -99,6 +99,7 @@ def make_shard_and_gather_fns(partition_specs, dtype_specs=None):
             in_shardings=partition_spec,
             out_shardings=None
         )
+        return jax_gather_fn
 
         def lower_gather_fn(tensor):
             return jax_gather_fn.lower(tensor)
